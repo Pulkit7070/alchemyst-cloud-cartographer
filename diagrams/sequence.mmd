@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant C as Client
+    participant CA as Cloud Armor
+    participant CW as caller-worker<br/>(gateway-vm :3111)
+    participant E as iii-engine<br/>(gateway-vm :49134)
+    participant IW as inference-worker<br/>(inference-vm)
+    participant M as Gemma 3 270M
+
+    C->>CA: POST /v1/chat/completions
+    CA->>CA: WAF rules + rate limit check
+    CA->>CW: HTTP request (allowed)
+    CW->>CW: parse body, extract messages[]
+
+    CW->>E: trigger inference::run_inference
+    E->>IW: WebSocket RPC dispatch
+    IW->>IW: apply_chat_template(messages)
+    IW->>M: tokenize + generate (max 32k tokens)
+    M-->>IW: token stream → decoded text
+    IW-->>E: { output: "..." }
+    E-->>CW: RPC result
+
+    CW->>CW: wrap in OpenAI-compatible JSON
+    CW-->>C: 200 { id, choices[{ message }] }
+
+    Note over C,M: Total latency: ~500ms–3s on CPU (gemma-3-270m)
+    Note over IW,M: Model loads once on boot,<br/>stays resident in RAM

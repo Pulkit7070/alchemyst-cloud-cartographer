@@ -1,75 +1,79 @@
-import { Worker, Trigger } from "iii-sdk";
+import { registerWorker } from "iii-sdk";
 
-const worker = new Worker({
-  engineUrl: process.env.III_ENGINE_URL ?? "ws://localhost:49134",
-});
+const engineUrl = process.env.III_ENGINE_URL ?? "ws://localhost:49134";
+const iii = registerWorker(engineUrl);
 
-// RPC bridge: called by other workers or direct function triggers
-worker.registerFunction("inference::get_response", async (payload: any) => {
-  const result = await worker.trigger({
-    function_id: "inference::run_inference",
-    payload,
-  });
-  return result;
-});
+// RPC bridge — callable by other workers
+iii.registerFunction(
+  "inference::get_response",
+  async (payload: { messages: Array<{ role: string; content: string }> }) => {
+    return await iii.trigger({
+      function_id: "inference::run_inference",
+      payload,
+    });
+  }
+);
 
-// HTTP handler: receives POST /v1/chat/completions from the internet
-worker.registerFunction("http::run_inference_over_http", async (payload: any) => {
-  const body =
-    typeof payload.body === "string" ? JSON.parse(payload.body) : payload.body;
+// HTTP handler — receives POST /v1/chat/completions
+iii.registerFunction(
+  "http::run_inference_over_http",
+  async (req: { body: string | Record<string, unknown> }) => {
+    const body =
+      typeof req.body === "string"
+        ? (JSON.parse(req.body) as Record<string, unknown>)
+        : req.body;
 
-  const result = await worker.trigger({
-    function_id: "inference::run_inference",
-    payload: { messages: body.messages },
-  });
+    const messages = body.messages as Array<{ role: string; content: string }>;
 
-  return {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-    },
-    body: JSON.stringify({
-      id: `chatcmpl-${Date.now()}`,
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
-      model: "gemma-3-270m",
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content: typeof result === "string" ? result : result?.output ?? JSON.stringify(result),
+    const result = await iii.trigger({
+      function_id: "inference::run_inference",
+      payload: { messages },
+    });
+
+    const content =
+      typeof result === "string"
+        ? result
+        : (result as Record<string, unknown>)?.output ?? JSON.stringify(result);
+
+    return {
+      status_code: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        id: `chatcmpl-${Date.now()}`,
+        object: "chat.completion",
+        created: Math.floor(Date.now() / 1000),
+        model: "gemma-3-270m",
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content },
+            finish_reason: "stop",
           },
-          finish_reason: "stop",
-        },
-      ],
-    }),
-  };
-});
+        ],
+      }),
+    };
+  }
+);
 
-// Health check endpoint
-worker.registerFunction("http::healthz", async () => ({
-  status: 200,
+// Health check
+iii.registerFunction("http::healthz", async () => ({
+  status_code: 200,
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ status: "ok", model: "gemma-3-270m" }),
 }));
 
-// Wire HTTP triggers
-worker.registerTrigger(
-  Trigger.http({
-    method: "POST",
-    path: "/v1/chat/completions",
-    function_id: "http::run_inference_over_http",
-  })
-);
+// HTTP triggers
+iii.registerTrigger({
+  type: "http",
+  function_id: "http::run_inference_over_http",
+  config: { api_path: "/v1/chat/completions", http_method: "POST" },
+});
 
-worker.registerTrigger(
-  Trigger.http({
-    method: "GET",
-    path: "/healthz",
-    function_id: "http::healthz",
-  })
-);
-
-worker.start();
+iii.registerTrigger({
+  type: "http",
+  function_id: "http::healthz",
+  config: { api_path: "/healthz", http_method: "GET" },
+});
