@@ -51,7 +51,6 @@ module "network" {
   source     = "./modules/network"
   project_id = var.project_id
   region     = var.region
-  labels     = var.labels
 
   depends_on = [google_project_service.apis]
 }
