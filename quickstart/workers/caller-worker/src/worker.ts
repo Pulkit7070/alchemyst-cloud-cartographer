@@ -1,6 +1,6 @@
 import { registerWorker } from "iii-sdk";
 
-const engineUrl = process.env.III_ENGINE_URL ?? "ws://localhost:49134";
+const engineUrl = process.env.III_URL ?? "ws://localhost:49134";
 const iii = registerWorker(engineUrl);
 
 // RPC bridge — callable by other workers

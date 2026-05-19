@@ -165,7 +165,7 @@ resource "google_compute_instance" "inference" {
     mkdir -p /etc/systemd/system/inference-worker.service.d
     cat > /etc/systemd/system/inference-worker.service.d/override.conf <<EOF
     [Service]
-    Environment="III_ENGINE_URL=ws://$${GATEWAY_IP}:49134"
+    Environment="III_URL=ws://$${GATEWAY_IP}:49134"
     EOF
 
     cp /opt/alchemyst/systemd/inference-worker.service /etc/systemd/system/

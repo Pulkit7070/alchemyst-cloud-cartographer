@@ -8,7 +8,7 @@ Type=simple
 User=alchemyst
 Group=alchemyst
 WorkingDirectory=/opt/alchemyst/quickstart/workers/caller-worker
-Environment="III_ENGINE_URL=ws://127.0.0.1:49134"
+Environment="III_URL=ws://127.0.0.1:49134"
 ExecStart=/usr/local/bin/bun run src/worker.ts
 Restart=always
 RestartSec=3
