@@ -1,0 +1,28 @@
+[Unit]
+Description=iii Engine (worker coordinator)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alchemyst
+Group=alchemyst
+WorkingDirectory=/opt/alchemyst/quickstart
+ExecStart=/usr/local/bin/iii engine start --config /opt/alchemyst/quickstart/config.yaml
+Restart=always
+RestartSec=3
+StartLimitBurst=10
+StartLimitIntervalSec=60
+
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/alchemyst/quickstart/data
+
+[Install]
+WantedBy=multi-user.target

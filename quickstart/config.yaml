@@ -1,0 +1,44 @@
+# iii engine config — cloud deployment version
+# HTTP binds to 0.0.0.0 so the API is reachable from outside the VM.
+# In local dev, change host back to 127.0.0.1.
+
+workers:
+  observability:
+    builtin: true
+    config:
+      tracing:
+        exporter: memory
+        max_spans: 10000
+      metrics:
+        exporter: memory
+      logging:
+        exporter: console
+        sampling_ratio: 1.0
+
+  queue:
+    builtin: true
+    config:
+      adapter: builtin
+
+  state:
+    builtin: true
+    config:
+      adapter: file
+      path: ./data/state_store.db
+
+  http:
+    builtin: true
+    config:
+      host: 0.0.0.0      # changed from 127.0.0.1 for cloud deployment
+      port: 3111
+      timeout: 30s
+      max_concurrent_requests: 1024
+      cors:
+        allow_origins: ["*"]
+        allow_methods: ["GET", "POST", "OPTIONS"]
+
+  inference-worker:
+    path: ./workers/inference-worker
+
+  caller-worker:
+    path: ./workers/caller-worker

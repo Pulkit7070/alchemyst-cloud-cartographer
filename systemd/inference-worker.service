@@ -1,0 +1,33 @@
+[Unit]
+Description=iii Inference Worker (Python — Gemma 3 270M)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alchemyst
+Group=alchemyst
+WorkingDirectory=/opt/alchemyst/quickstart/workers/inference-worker
+# III_ENGINE_URL is injected via systemd drop-in override at boot
+# (see startup script: /etc/systemd/system/inference-worker.service.d/override.conf)
+Environment="HF_HOME=/opt/alchemyst/.cache/huggingface"
+Environment="TRANSFORMERS_CACHE=/opt/alchemyst/.cache/huggingface"
+ExecStart=/opt/alchemyst/venv/bin/python inference_worker.py
+Restart=always
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+# Give the model time to load before marking as failed
+TimeoutStartSec=300
+
+StandardOutput=journal
+StandardError=journal
+
+# Allow large file access for model weights
+LimitNOFILE=65536
+NoNewPrivileges=true
+ReadWritePaths=/opt/alchemyst/.cache
+
+[Install]
+WantedBy=multi-user.target

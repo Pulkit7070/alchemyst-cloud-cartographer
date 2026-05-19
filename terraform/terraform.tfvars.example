@@ -1,0 +1,7 @@
+project_id               = "alchemyst-cartographer-pulkit"
+region                   = "asia-south1"
+zone                     = "asia-south1-a"
+owner_email              = "pulkitsaraf.dev@gmail.com"
+alert_notification_email = "pulkitsaraf.dev@gmail.com"
+domain                   = ""   # or "api.yourdomain.com" for HTTPS
+app_version              = "latest"
