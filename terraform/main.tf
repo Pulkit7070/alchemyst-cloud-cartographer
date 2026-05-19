@@ -39,7 +39,9 @@ resource "google_storage_bucket" "app_bundles" {
   uniform_bucket_level_access = true
   force_destroy               = true
 
-  versioning { enabled = true }
+  versioning {
+    enabled = true
+  }
 
   depends_on = [google_project_service.apis]
 }
@@ -87,11 +89,11 @@ module "compute" {
 
 # ── Observability ─────────────────────────────────────────────────────────────
 module "observability" {
-  source                          = "./modules/observability"
-  project_id                      = var.project_id
-  alert_notification_email        = var.alert_notification_email
-  gateway_instance_self_link      = module.compute.gateway_self_link
-  inference_instance_self_link    = module.compute.inference_self_link
+  source                       = "./modules/observability"
+  project_id                   = var.project_id
+  alert_notification_email     = var.alert_notification_email
+  gateway_instance_self_link   = module.compute.gateway_self_link
+  inference_instance_self_link = module.compute.inference_self_link
 
   depends_on = [module.compute]
 }

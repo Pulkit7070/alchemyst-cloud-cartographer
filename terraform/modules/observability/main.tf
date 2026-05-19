@@ -112,8 +112,8 @@ resource "google_monitoring_alert_policy" "inference_cpu" {
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 resource "google_monitoring_dashboard" "main" {
-  project          = var.project_id
-  dashboard_json   = jsonencode({
+  project        = var.project_id
+  dashboard_json = jsonencode({
     displayName = "Alchemyst Inference Dashboard"
     gridLayout = {
       columns = 2
