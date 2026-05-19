@@ -1,5 +1,11 @@
-variable "project_id" { type = string }
-variable "region"     { type = string; default = "asia-south1" }
+variable "project_id" {
+  type = string
+}
+
+variable "region" {
+  type    = string
+  default = "asia-south1"
+}
 
 resource "google_storage_bucket" "tf_state" {
   project                     = var.project_id
@@ -8,7 +14,9 @@ resource "google_storage_bucket" "tf_state" {
   uniform_bucket_level_access = true
   force_destroy               = false
 
-  versioning { enabled = true }
+  versioning {
+    enabled = true
+  }
 
   retention_policy {
     is_locked        = false
@@ -16,7 +24,9 @@ resource "google_storage_bucket" "tf_state" {
   }
 
   lifecycle_rule {
-    action { type = "Delete" }
+    action {
+      type = "Delete"
+    }
     condition {
       num_newer_versions = 10
       with_state         = "ARCHIVED"
@@ -24,4 +34,6 @@ resource "google_storage_bucket" "tf_state" {
   }
 }
 
-output "bucket_name" { value = google_storage_bucket.tf_state.name }
+output "bucket_name" {
+  value = google_storage_bucket.tf_state.name
+}
