@@ -1,0 +1,66 @@
+name: Terraform CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate & Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Format Check
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Terraform Init (no backend)
+        run: |
+          terraform -chdir=terraform init \
+            -backend=false \
+            -input=false
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+
+      - name: tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+      - run: tflint --chdir=terraform --recursive
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+
+      - name: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          quiet: true
+          soft_fail: true   # informational for now
+
+      - name: infracost (cost estimate)
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+        continue-on-error: true
+      - name: infracost breakdown
+        run: |
+          infracost breakdown \
+            --path terraform \
+            --format table \
+            --terraform-var "project_id=example-project" \
+            --terraform-var "owner_email=ci@example.com" \
+            2>/dev/null || echo "infracost skipped (no API key)"
+        continue-on-error: true
