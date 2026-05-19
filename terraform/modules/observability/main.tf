@@ -1,3 +1,9 @@
+locals {
+  notification_channels = var.alert_notification_email != "" ? [
+    google_monitoring_notification_channel.email[0].name
+  ] : []
+}
+
 # ── Notification channel (email) ──────────────────────────────────────────────
 resource "google_monitoring_notification_channel" "email" {
   count        = var.alert_notification_email != "" ? 1 : 0
@@ -7,12 +13,6 @@ resource "google_monitoring_notification_channel" "email" {
   labels = {
     email_address = var.alert_notification_email
   }
-}
-
-locals {
-  notification_channels = var.alert_notification_email != "" ? [
-    google_monitoring_notification_channel.email[0].name
-  ] : []
 }
 
 # ── Uptime check on the API endpoint ─────────────────────────────────────────
@@ -33,7 +33,7 @@ resource "google_monitoring_uptime_check_config" "api" {
     type = "uptime_url"
     labels = {
       project_id = var.project_id
-      host       = "placeholder" # updated by deploy script with actual IP
+      host       = "placeholder"
     }
   }
 }
@@ -110,67 +110,69 @@ resource "google_monitoring_alert_policy" "inference_cpu" {
   severity              = "WARNING"
 }
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
+# ── Dashboard (JSON as heredoc — terraform fmt does not touch heredoc contents)
 resource "google_monitoring_dashboard" "main" {
-  project        = var.project_id
-  dashboard_json = jsonencode({
-    displayName = "Alchemyst Inference Dashboard"
-    gridLayout = {
-      columns = 2
-      widgets = [
-        {
-          title = "Gateway CPU"
-          xyChart = {
-            dataSets = [{
-              timeSeriesQuery = {
-                timeSeriesFilter = {
-                  filter = "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" metadata.system_labels.name=\"gateway-vm\""
-                  aggregation = { alignmentPeriod = "60s", perSeriesAligner = "ALIGN_MEAN" }
+  project = var.project_id
+  dashboard_json = <<-EOT
+    {
+      "displayName": "Alchemyst Inference Dashboard",
+      "gridLayout": {
+        "columns": "2",
+        "widgets": [
+          {
+            "title": "Gateway CPU",
+            "xyChart": {
+              "dataSets": [{
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" metadata.system_labels.\"name\"=\"gateway-vm\"",
+                    "aggregation": { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_MEAN" }
+                  }
                 }
-              }
-            }]
-          }
-        },
-        {
-          title = "Inference CPU"
-          xyChart = {
-            dataSets = [{
-              timeSeriesQuery = {
-                timeSeriesFilter = {
-                  filter = "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" metadata.system_labels.name=\"inference-vm\""
-                  aggregation = { alignmentPeriod = "60s", perSeriesAligner = "ALIGN_MEAN" }
+              }]
+            }
+          },
+          {
+            "title": "Inference CPU",
+            "xyChart": {
+              "dataSets": [{
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" metadata.system_labels.\"name\"=\"inference-vm\"",
+                    "aggregation": { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_MEAN" }
+                  }
                 }
-              }
-            }]
-          }
-        },
-        {
-          title = "Gateway Network Egress"
-          xyChart = {
-            dataSets = [{
-              timeSeriesQuery = {
-                timeSeriesFilter = {
-                  filter = "metric.type=\"compute.googleapis.com/instance/network/sent_bytes_count\" resource.type=\"gce_instance\" metadata.system_labels.name=\"gateway-vm\""
-                  aggregation = { alignmentPeriod = "60s", perSeriesAligner = "ALIGN_RATE" }
+              }]
+            }
+          },
+          {
+            "title": "Gateway Network Egress (bytes/s)",
+            "xyChart": {
+              "dataSets": [{
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"compute.googleapis.com/instance/network/sent_bytes_count\" resource.type=\"gce_instance\" metadata.system_labels.\"name\"=\"gateway-vm\"",
+                    "aggregation": { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE" }
+                  }
                 }
-              }
-            }]
-          }
-        },
-        {
-          title = "Inference Memory"
-          xyChart = {
-            dataSets = [{
-              timeSeriesQuery = {
-                timeSeriesFilter = {
-                  filter = "metric.type=\"compute.googleapis.com/instance/memory/balloon/ram_used\" resource.type=\"gce_instance\" metadata.system_labels.name=\"inference-vm\""
-                  aggregation = { alignmentPeriod = "60s", perSeriesAligner = "ALIGN_MEAN" }
+              }]
+            }
+          },
+          {
+            "title": "Inference Memory Used",
+            "xyChart": {
+              "dataSets": [{
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"compute.googleapis.com/instance/memory/balloon/ram_used\" resource.type=\"gce_instance\" metadata.system_labels.\"name\"=\"inference-vm\"",
+                    "aggregation": { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_MEAN" }
+                  }
                 }
-              }
-            }]
+              }]
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  })
+  EOT
 }
