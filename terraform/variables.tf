@@ -47,12 +47,6 @@ variable "alert_notification_email" {
   default     = ""
 }
 
-variable "domain" {
-  type        = string
-  description = "Domain for the HTTPS LB managed cert (optional). Leave empty to use HTTP only."
-  default     = ""
-}
-
 variable "labels" {
   type = map(string)
   default = {

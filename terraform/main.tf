@@ -91,8 +91,5 @@ module "observability" {
   source                       = "./modules/observability"
   project_id                   = var.project_id
   alert_notification_email     = var.alert_notification_email
-  gateway_instance_self_link   = module.compute.gateway_self_link
-  inference_instance_self_link = module.compute.inference_self_link
-
   depends_on = [module.compute]
 }
