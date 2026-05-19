@@ -112,7 +112,7 @@ resource "google_monitoring_alert_policy" "inference_cpu" {
 
 # ── Dashboard (JSON as heredoc — terraform fmt does not touch heredoc contents)
 resource "google_monitoring_dashboard" "main" {
-  project = var.project_id
+  project        = var.project_id
   dashboard_json = <<-EOT
     {
       "displayName": "Alchemyst Inference Dashboard",
