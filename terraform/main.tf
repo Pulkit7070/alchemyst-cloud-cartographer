@@ -88,8 +88,9 @@ module "compute" {
 
 # ── Observability ─────────────────────────────────────────────────────────────
 module "observability" {
-  source                       = "./modules/observability"
-  project_id                   = var.project_id
-  alert_notification_email     = var.alert_notification_email
+  source                   = "./modules/observability"
+  project_id               = var.project_id
+  alert_notification_email = var.alert_notification_email
+
   depends_on = [module.compute]
 }
